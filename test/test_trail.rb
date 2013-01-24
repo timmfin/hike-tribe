@@ -331,3 +331,100 @@ class IndexTest < Test::Unit::TestCase
     assert !File.exist?(fixture_path("dashboard.html"))
   end
 end
+
+
+class IndexWithParentTest < Test::Unit::TestCase
+  attr_reader :trail
+
+  def new_trail
+    trail = Hike::Trail.new(FIXTURE_ROOT, { :must_include_parent => true })
+    trail.append_paths "app/views", "vendor/plugins/signal_id/app/views", "."
+    trail.append_extensions "builder", "coffee", "str", ".erb"
+    trail.alias_extension "htm", "html"
+    trail.alias_extension "xhtml", "html"
+    trail.alias_extension "php", "html"
+    trail.alias_extension "coffee", "js"
+    yield trail if block_given?
+    trail.index
+  end
+
+  def setup
+    @trail = new_trail
+  end
+
+  def fixture_path(path)
+    File.expand_path(File.join(FIXTURE_ROOT, path))
+  end
+
+  def test_find_must_include_parent_is_set
+    assert_equal(
+      true,
+      @trail.must_include_parent
+    )
+  end
+
+  def test_find_normally_nonexistent_file
+    assert_nil trail.find("people/show.html")
+  end
+
+  def test_find_nonexistent_file_since_parent_isnt_provided
+    assert_nil trail.find("projects/index.html")
+  end
+
+  def test_find
+    assert_equal(
+      fixture_path("app/views/projects/index.html.erb"),
+      trail.find("views/projects/index.html")
+    )
+  end
+
+  def test_find_another
+    assert_equal(
+      fixture_path("app/views/people.coffee"),
+      trail.find("views/people.coffee")
+    )
+  end
+
+  def test_find_parent_across_base_boundry
+    assert_equal(
+      fixture_path("README"),
+      trail.find("fixtures/README")
+    )
+  end
+
+  def test_find_with_leading_slash
+    assert_equal(
+      fixture_path("app/views/people.coffee"),
+      trail.find("/views/people.coffee")
+    )
+  end
+
+
+  # The must_include_parent doesn't change things when an absolute base_path is provided
+  def test_find_with_base_path_option_and_relative_logical_path
+    assert_equal(
+      fixture_path("app/views/projects/index.html.erb"),
+      trail.find("./index.html", :base_path => fixture_path("app/views/projects"))
+    )
+  end
+
+  def test_base_path_option_must_be_expanded
+    assert_nil trail.find("./index.html", :base_path => "app/views/projects")
+    assert_nil trail.find("./index.html", :base_path => "fixtures/app/views/projects")
+  end
+
+
+  def test_find_respects_path_order
+    assert_equal(
+      fixture_path("app/views/layouts/interstitial.html.erb"),
+      trail.find("/views/layouts/interstitial.html")
+    )
+
+    trail = new_trail { |t| t.paths.replace t.paths.reverse }
+
+    assert_equal(
+      fixture_path("vendor/plugins/signal_id/app/views/layouts/interstitial.html.erb"),
+      trail.find("/views/layouts/interstitial.html")
+    )
+  end
+end

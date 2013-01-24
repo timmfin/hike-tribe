@@ -15,9 +15,12 @@ module Hike
     # an `Array` of aliases.
     attr_reader :aliases
 
+    # `Index#must_include_parent` is a boolean
+    attr_reader :must_include_parent
+
     # `Index.new` is an internal method. Instead of constructing it
     # directly, create a `Trail` and call `Trail#index`.
-    def initialize(root, paths, extensions, aliases)
+    def initialize(root, paths, extensions, aliases, options = {})
       @root = root
 
       # Freeze is used here so an error is throw if a mutator method
@@ -33,6 +36,8 @@ module Hike
       @stats    = {}
       @entries  = {}
       @patterns = {}
+
+      @must_include_parent = options[:must_include_parent] == true
     end
 
     # `Index#root` returns root path as a `String`. This attribute is immutable.
@@ -109,7 +114,13 @@ module Hike
       # Finds logical path across all `paths`
       def find_in_paths(logical_path, &block)
         dirname, basename = logical_path.split
+
         @pathnames.each do |base_path|
+
+          # If the logical path must include the parent directory, we test that
+          # by removing the last directory of the base path
+          base_path = strip_last_directory(base_path) if must_include_parent
+
           match(base_path.join(dirname), basename, &block)
         end
       end
@@ -199,6 +210,19 @@ module Hike
           aliases.push(key) if value == extension
           aliases
         end
+      end
+
+      # Strips off the last directory of a pathname
+      # E.g.  /bla/foo/whatav => /bla/foo
+      def strip_last_directory(path)
+        tokens = path.to_s.split(Regexp.union(*[File::SEPARATOR, File::ALT_SEPARATOR].compact)).map {|x| x=="" ? File::SEPARATOR : x}
+        tokens = tokens[0...-1]
+
+        Pathname.new(tokens[0]).join(*tokens[1..-1])
+      end
+
+      def all_paths_stripped
+        paths.map {|path| strip_last_directory(path).to_s }
       end
   end
 end

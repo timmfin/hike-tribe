@@ -45,11 +45,13 @@ module Hike
     # A Trail accepts an optional root path that defaults to your
     # current working directory. Any relative paths added to
     # `Trail#paths` will expanded relative to the root.
-    def initialize(root = ".")
+    def initialize(root = ".", options = {})
       @root       = Pathname.new(root).expand_path
       @paths      = Paths.new(@root)
       @extensions = Extensions.new
       @aliases    = Hash.new { |h, k| h[k] = Extensions.new }
+
+      @options = options
     end
 
     # `Trail#root` returns root path as a `String`. This attribute is immutable.
@@ -150,7 +152,7 @@ module Hike
     #     index.find "test_trail"
     #
     def index
-      Index.new(root, paths, extensions, aliases)
+      Index.new(root, paths, extensions, aliases, options)
     end
 
     # `Trail#entries` is equivalent to `Dir#entries`. It is not
@@ -168,6 +170,8 @@ module Hike
     end
 
     private
+      attr_reader :options
+
       def normalize_extension(extension)
         if extension[/^\./]
           extension
