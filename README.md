@@ -41,6 +41,21 @@ Explore your shell path:
     trail.find "gem"
     # => "/Users/sam/.rvm/rubies/ree-1.8.7-2010.02/bin/gem"
 
+## Must include parent option
+
+If you want your logical paths to include the parent directory, you can use this option:
+
+    trail = Hike::Trail.new ".", { :must_include_parent => true }
+    trail.append_extension ".js"
+    trail.append_paths "/opt/something/project1", "/tmp/foo/bar/project2"
+
+    trail.find "project1/lib/bla.js"
+    # => "/opt/something/project1/lib/bla.js"
+
+    trail.find "project2/app.js"
+    # => "/tmp/foo/bar/project2/app.js"
+    
+
 # Installation
 
     $ gem install hike
