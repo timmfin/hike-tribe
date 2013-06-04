@@ -215,10 +215,8 @@ module Hike
       # Strips off the last directory of a pathname
       # E.g.  /bla/foo/whatav => /bla/foo
       def strip_last_directory(path)
-        tokens = path.to_s.split(Regexp.union(*[File::SEPARATOR, File::ALT_SEPARATOR].compact)).map {|x| x=="" ? File::SEPARATOR : x}
-        tokens = tokens[0...-1]
-
-        Pathname.new(tokens[0]).join(*tokens[1..-1])
+        result, _ = path.split
+        result
       end
 
       def all_paths_stripped
